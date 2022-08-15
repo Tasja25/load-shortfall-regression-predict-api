@@ -58,7 +58,31 @@ def _preprocess_data(data):
     # ---------------------------------------------------------------
 
     # ----------- Replace this code with your own preprocessing steps --------
-    predict_vector = feature_vector_df[['Madrid_wind_speed','Bilbao_rain_1h','Valencia_wind_speed']]
+    #Import libraries needed
+    from sklearn.preprocessing import StandardScaler   
+    from sklearn.linear_model import Ridge
+    #Create clean dataset
+    Cleaned = feature_vector_df.drop(['Unnamed: 0'], axis='columns')
+    #Calculate median for Valencia_pressure & fill all missing values with median value
+    med_value = Cleaned.Valencia_pressure.median()
+    Cleaned.loc[Cleaned.Valencia_pressure.isnull(), 'Valencia_pressure'] = med_value
+    #Create month & hour variable. Drop time
+    month = pd.to_datetime(Cleaned.time).dt.month.astype(object)
+    hour = pd.to_datetime(Cleaned.time).dt.hour.astype(object)
+    Cleaned.insert(0, 'month', month, True)
+    Cleaned.insert(1, 'hour', hour, True)
+    #Drop time variable
+    Cleaned = Cleaned.drop(['time'], axis='columns')
+    #Drop independant variables that show little distribution of values, as shown by distribution graphs
+    Cleaned = Cleaned.drop(['Bilbao_snow_3h','Barcelona_pressure', 'Seville_rain_3h', 'Valencia_snow_3h'], axis='columns')
+    # Create dummy variables for remaining object variables
+    Cleaned=pd.get_dummies(Cleaned, drop_first=True)
+    # create scaler object
+    scaler = StandardScaler()
+    # create scaled version of the predictors 
+    X_scaled = scaler.fit_transform(Cleaned)
+    # convert the scaled predictor values into a dataframe
+    predict_vector = pd.DataFrame(X_scaled,columns=Cleaned.columns)
     # ------------------------------------------------------------------------
 
     return predict_vector
